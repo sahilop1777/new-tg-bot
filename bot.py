@@ -1,8 +1,17 @@
 import sqlite3
 import random
 import string
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, ContextTypes
+from telegram import (
+    Update,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+)
+from telegram.ext import (
+    Application,
+    CommandHandler,
+    ContextTypes,
+    CallbackQueryHandler,
+)
 
 # ================= CONFIG =================
 TOKEN = "7167820051:AAFiPhjov5-f1iKXMTQL58tsT02kgFQTeXs"
@@ -31,24 +40,50 @@ async def is_user_joined(bot, user_id):
     except:
         return False
 
+# ================= MAIN MENU =================
+async def main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = (
+        "🏠 *Main Menu*\n\n"
+        "⭐ /mypoints – Check points\n"
+        "🔗 /referral – Get referral link"
+    )
+
+    if update.message:
+        await update.message.reply_text(text, parse_mode="Markdown")
+    else:
+        await update.callback_query.message.reply_text(text, parse_mode="Markdown")
+
 # ================= START =================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     bot = context.bot
 
+    # Force Join
     if not await is_user_joined(bot, user.id):
-        keyboard = [[
-            InlineKeyboardButton(
-                "✅ Join Channel",
-                url=f"https://t.me/{CHANNEL_USERNAME[1:]}"
-            )
-        ]]
+        keyboard = [
+            [
+                InlineKeyboardButton(
+                    "✅ Join Channel",
+                    url=f"https://t.me/{CHANNEL_USERNAME[1:]}"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    "🔄 Verify",
+                    callback_data="verify_join"
+                )
+            ]
+        ]
+
         await update.message.reply_text(
-            "❗ You must join our channel to use this bot.",
-            reply_markup=InlineKeyboardMarkup(keyboard)
+            "❗ You must join our channel first.\n\n"
+            "After joining, click *Verify*.",
+            reply_markup=InlineKeyboardMarkup(keyboard),
+            parse_mode="Markdown"
         )
         return
 
+    # Handle referral
     referrer_id = None
     if context.args:
         try:
@@ -71,16 +106,32 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             conn.commit()
 
-    await update.message.reply_text(
-        "🎉 Welcome!\n\n"
-        "/mypoints – Check points\n"
-        "/referral – Get referral link"
-    )
+    await main_menu(update, context)
+
+# ================= VERIFY CALLBACK =================
+async def verify_join(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    user = query.from_user
+    bot = context.bot
+
+    if await is_user_joined(bot, user.id):
+        await query.message.delete()
+        await main_menu(update, context)
+    else:
+        await query.answer(
+            "❌ You have not joined the channel yet.",
+            show_alert=True
+        )
 
 # ================= MY POINTS =================
 async def mypoints(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
-    cursor.execute("SELECT points, coupon FROM users WHERE user_id=?", (user_id,))
+    cursor.execute(
+        "SELECT points, coupon FROM users WHERE user_id=?",
+        (user_id,)
+    )
     data = cursor.fetchone()
 
     if not data:
@@ -114,8 +165,22 @@ async def referral(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     link = f"https://t.me/{BOT_USERNAME}?start={user_id}"
     await update.message.reply_text(
-        "🔗 Your Referral Link:\n\n"
-        f"{link}"
+        "🔗 *Your Referral Link:*\n\n"
+        f"{link}",
+        parse_mode="Markdown"
     )
 
-# ================= MAIN =====
+# ================= MAIN =================
+def main():
+    app = Application.builder().token(TOKEN).build()
+
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("mypoints", mypoints))
+    app.add_handler(CommandHandler("referral", referral))
+    app.add_handler(CallbackQueryHandler(verify_join, pattern="verify_join"))
+
+    print("Bot started successfully")
+    app.run_polling()
+
+if __name__ == "__main__":
+    main()
