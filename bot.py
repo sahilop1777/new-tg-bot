@@ -10,6 +10,8 @@ TOKEN = os.getenv("TOKEN")
 CHANNEL_USERNAME = os.getenv("CHANNEL")
 BOT_USERNAME = os.getenv("BOT_USERNAME")
 
+print("DEBUG TOKEN =", repr(TOKEN))
+
 # ================= DATABASE =================
 conn = sqlite3.connect("users.db", check_same_thread=False)
 cursor = conn.cursor()
