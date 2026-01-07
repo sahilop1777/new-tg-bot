@@ -1,14 +1,26 @@
 import sqlite3
 import random
 import string
+import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
+from telegram.ext import (
+    Application,
+    CommandHandler,
+    CallbackQueryHandler,
+    ContextTypes,
+)
+
+# ================= LOGGING =================
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=logging.INFO,
+)
 
 # ================= CONFIG =================
 TOKEN = "8078328136:AAHceSLv2HmSxtnxKWmab0MmGzmf7Cd5lSo"
 CHANNEL_USERNAME = "@channelforsellings"
 BOT_USERNAME = "newfinal00bot"
-ADMIN_ID = 6416481890  # <-- PUT YOUR TELEGRAM USER ID
+ADMIN_ID = 6416481890
 
 # ================= DATABASE =================
 conn = sqlite3.connect("users.db", check_same_thread=False)
@@ -81,25 +93,11 @@ async def verify(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     cursor.execute("SELECT user_id FROM users WHERE user_id=?", (user.id,))
     if not cursor.fetchone():
-        referrer_id = None
-        if context.args:
-            try:
-                referrer_id = int(context.args[0])
-            except:
-                pass
-
         cursor.execute(
-            "INSERT INTO users (user_id, referrer_id) VALUES (?,?)",
-            (user.id, referrer_id)
+            "INSERT INTO users (user_id, referrer_id) VALUES (?, ?)",
+            (user.id, None)
         )
         conn.commit()
-
-        if referrer_id and referrer_id != user.id:
-            cursor.execute(
-                "UPDATE users SET points = points + 1 WHERE user_id=?",
-                (referrer_id,)
-            )
-            conn.commit()
 
     await query.message.edit_text(
         "🏠 *Main Menu*",
@@ -134,11 +132,16 @@ async def mycoupon(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
-    cursor.execute("SELECT points, coupon FROM users WHERE user_id=?", (query.from_user.id,))
+    cursor.execute(
+        "SELECT points, coupon FROM users WHERE user_id=?",
+        (query.from_user.id,)
+    )
     points, coupon = cursor.fetchone()
 
     if points >= 3 and not coupon:
-        coupon = "CPN-" + ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+        coupon = "CPN-" + "".join(
+            random.choices(string.ascii_uppercase + string.digits, k=6)
+        )
         cursor.execute(
             "UPDATE users SET coupon=? WHERE user_id=?",
             (coupon, query.from_user.id)
@@ -146,9 +149,12 @@ async def mycoupon(update: Update, context: ContextTypes.DEFAULT_TYPE):
         conn.commit()
 
     msg = f"🎟 Coupon: {coupon}" if coupon else "❌ No coupon yet"
-    await query.message.edit_text(msg, reply_markup=main_menu_keyboard(query.from_user.id == ADMIN_ID))
+    await query.message.edit_text(
+        msg,
+        reply_markup=main_menu_keyboard(query.from_user.id == ADMIN_ID)
+    )
 
-# ================= ADMIN PANEL =================
+# ================= ADMIN =================
 async def admin_panel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -196,21 +202,35 @@ async def back(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=main_menu_keyboard(query.from_user.id == ADMIN_ID)
     )
 
+# ================= ERROR HANDLER =================
+async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
+    logging.error("Exception occurred", exc_info=context.error)
+
 # ================= MAIN =================
 def main():
-    app = Application.builder().token(TOKEN).build()
+    app = (
+        Application.builder()
+        .token(TOKEN)
+        .build()
+    )
 
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CallbackQueryHandler(verify, pattern="verify"))
-    app.add_handler(CallbackQueryHandler(mypoints, pattern="mypoints"))
-    app.add_handler(CallbackQueryHandler(referral, pattern="referral"))
-    app.add_handler(CallbackQueryHandler(mycoupon, pattern="mycoupon"))
-    app.add_handler(CallbackQueryHandler(admin_panel, pattern="admin"))
-    app.add_handler(CallbackQueryHandler(admin_users, pattern="admin_users"))
-    app.add_handler(CallbackQueryHandler(admin_reset, pattern="admin_reset"))
-    app.add_handler(CallbackQueryHandler(back, pattern="back"))
+    app.add_handler(CallbackQueryHandler(verify, pattern="^verify$"))
+    app.add_handler(CallbackQueryHandler(mypoints, pattern="^mypoints$"))
+    app.add_handler(CallbackQueryHandler(referral, pattern="^referral$"))
+    app.add_handler(CallbackQueryHandler(mycoupon, pattern="^mycoupon$"))
+    app.add_handler(CallbackQueryHandler(admin_panel, pattern="^admin$"))
+    app.add_handler(CallbackQueryHandler(admin_users, pattern="^admin_users$"))
+    app.add_handler(CallbackQueryHandler(admin_reset, pattern="^admin_reset$"))
+    app.add_handler(CallbackQueryHandler(back, pattern="^back$"))
 
-    app.run_polling()
+    app.add_error_handler(error_handler)
+
+    # 🔥 IMPORTANT FIX FOR YOUR ERROR
+    app.run_polling(
+        drop_pending_updates=True,
+        close_loop=False
+    )
 
 if __name__ == "__main__":
     main()
