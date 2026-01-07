@@ -6,9 +6,12 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, CallbackContext
 
 # ================= CONFIG =================
-TOKEN = os.getenv(7167820051:AAFiPhjov5-f1iKXMTQL58tsT02kgFQTeXs)  # set in Railway variables
-CHANNEL_USERNAME = os.getenv(@channelforsellings)  # example @mychannel
-BOT_USERNAME = os.getenv(mybitiokbot)  # without @
+import os
+
+TOKEN = os.getenv("TOKEN")
+CHANNEL_USERNAME = os.getenv("CHANNEL")
+BOT_USERNAME = os.getenv("BOT_USERNAME")
+
 
 # ================= DATABASE =================
 conn = sqlite3.connect(users.db, check_same_thread=False)
