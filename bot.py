@@ -2,9 +2,9 @@ import sqlite3
 import random
 import string
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+from telegram.ext import Application, CommandHandler, ContextTypes
 
-# ================= CONFIG (HARDCODED) =================
+# ================= CONFIG =================
 TOKEN = "7167820051:AAFiPhjov5-f1iKXMTQL58tsT02kgFQTeXs"
 CHANNEL_USERNAME = "@channelforsellings"
 BOT_USERNAME = "mybitiokbot"
@@ -36,7 +36,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     bot = context.bot
 
-    # Force join
     if not await is_user_joined(bot, user.id):
         keyboard = [[
             InlineKeyboardButton(
@@ -119,16 +118,4 @@ async def referral(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"{link}"
     )
 
-# ================= MAIN =================
-def main():
-    app = ApplicationBuilder().token(TOKEN).build()
-
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("mypoints", mypoints))
-    app.add_handler(CommandHandler("referral", referral))
-
-    print("Bot started successfully")
-    app.run_polling()
-
-if __name__ == "__main__":
-    main()
+# ================= MAIN =====
