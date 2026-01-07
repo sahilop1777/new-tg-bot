@@ -5,10 +5,10 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
 # ================= CONFIG =================
-TOKEN = "YOUR_BOT_TOKEN_HERE"
+TOKEN = "8078328136:AAHceSLv2HmSxtnxKWmab0MmGzmf7Cd5lSo"
 CHANNEL_USERNAME = "@channelforsellings"
-BOT_USERNAME = "mybitiokbot"
-ADMIN_ID = 123456789  # <-- PUT YOUR TELEGRAM USER ID
+BOT_USERNAME = "newfinal00bot"
+ADMIN_ID = 6416481890  # <-- PUT YOUR TELEGRAM USER ID
 
 # ================= DATABASE =================
 conn = sqlite3.connect("users.db", check_same_thread=False)
