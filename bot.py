@@ -1,16 +1,13 @@
-import os
 import sqlite3
 import random
 import string
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-# ================= CONFIG =================
-TOKEN = os.getenv("TOKEN")
-CHANNEL_USERNAME = os.getenv("CHANNEL")
-BOT_USERNAME = os.getenv("BOT_USERNAME")
-
-print("DEBUG TOKEN =", repr(TOKEN))
+# ================= CONFIG (HARDCODED) =================
+TOKEN = "7167820051:AAFiPhjov5-f1iKXMTQL58tsT02kgFQTeXs"
+CHANNEL_USERNAME = "@channelforsellings"
+BOT_USERNAME = "mybitiokbot"
 
 # ================= DATABASE =================
 conn = sqlite3.connect("users.db", check_same_thread=False)
@@ -30,7 +27,7 @@ conn.commit()
 async def is_user_joined(bot, user_id):
     try:
         member = await bot.get_chat_member(CHANNEL_USERNAME, user_id)
-        return member.status in ["member", "administrator", "creator"]
+        return member.status in ("member", "administrator", "creator")
     except:
         return False
 
@@ -39,6 +36,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     bot = context.bot
 
+    # Force join
     if not await is_user_joined(bot, user.id):
         keyboard = [[
             InlineKeyboardButton(
@@ -75,7 +73,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             conn.commit()
 
     await update.message.reply_text(
-        "🎉 Welcome!\n\n/mypoints – Check points\n/referral – Get referral link"
+        "🎉 Welcome!\n\n"
+        "/mypoints – Check points\n"
+        "/referral – Get referral link"
     )
 
 # ================= MY POINTS =================
@@ -100,7 +100,9 @@ async def mypoints(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         conn.commit()
         await update.message.reply_text(
-            f"🎉 Congratulations!\n⭐ Points: {points}\n🎟 Coupon: {coupon}"
+            f"🎉 Congratulations!\n\n"
+            f"⭐ Points: {points}\n"
+            f"🎟 Coupon Code: {coupon}"
         )
     else:
         msg = f"⭐ Your Points: {points}"
@@ -113,7 +115,8 @@ async def referral(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     link = f"https://t.me/{BOT_USERNAME}?start={user_id}"
     await update.message.reply_text(
-        f"🔗 Your Referral Link:\n\n{link}"
+        "🔗 Your Referral Link:\n\n"
+        f"{link}"
     )
 
 # ================= MAIN =================
@@ -124,6 +127,7 @@ def main():
     app.add_handler(CommandHandler("mypoints", mypoints))
     app.add_handler(CommandHandler("referral", referral))
 
+    print("Bot started successfully")
     app.run_polling()
 
 if __name__ == "__main__":
